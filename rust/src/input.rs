@@ -1,9 +1,9 @@
-use std::fs;
-use std::path::Path;
-use std::io::Write;
-use std::fs::File;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use reqwest::header::COOKIE;
+use std::fs;
+use std::fs::File;
+use std::io::Write;
+use std::path::Path;
 
 pub fn get_input(year: u32, day: u32) -> Result<String> {
     let file_path = format!("input/{}/day_{}", year, day);
@@ -12,21 +12,19 @@ pub fn get_input(year: u32, day: u32) -> Result<String> {
     if path.exists() {
         Ok(fs::read_to_string(path)?)
     } else {
+        println!("Downloading input for Year: {}, Day: {}", year, day);
         Ok(download(year, day, path)?)
-    } 
+    }
 }
 
 fn download(year: u32, day: u32, path: &Path) -> Result<String> {
     // Advent of Code parameters
     let url = format!("https://adventofcode.com/{}/day/{}/input", year, day);
-    let session_id = get_session_id()?;
+    let session_id = get_session_id().context("Retrieving session cookie from input/session")?;
     let session = format!("session={}", session_id);
 
     let client = reqwest::blocking::Client::new();
-    let res = client
-        .get(url)
-        .header(COOKIE, session)
-        .send()?;
+    let res = client.get(url).header(COOKIE, session).send()?;
     let input = res.text()?;
 
     let prefix = path.parent().unwrap();
