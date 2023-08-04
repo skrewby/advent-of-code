@@ -1,6 +1,6 @@
 use crate::solution::Solution;
-use std::collections::HashMap;
 use anyhow::Result;
+use std::collections::HashMap;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
 struct House {
@@ -10,10 +10,7 @@ struct House {
 
 impl House {
     fn new() -> House {
-        House {
-            x: 0,
-            y: 0
-        }
+        House { x: 0, y: 0 }
     }
 
     fn travel(&mut self, dx: i32, dy: i32) {
