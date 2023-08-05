@@ -6,7 +6,7 @@ use anyhow::{Context, Result};
 
 fn main() -> Result<()> {
     let year = 2015;
-    let day = 5;
+    let day = 6;
     let input = input::get_input(year, day).context("Getting input for solution")?;
 
     let solution = match year {
