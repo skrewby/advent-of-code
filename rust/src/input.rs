@@ -25,7 +25,8 @@ fn download(year: u32, day: u32, path: &Path) -> Result<String> {
 
     let client = reqwest::blocking::Client::new();
     let res = client.get(url).header(COOKIE, session).send()?;
-    let input = res.text()?;
+    let mut input = res.text()?;
+    input.truncate(input.len() - 1);
 
     let prefix = path.parent().unwrap();
     std::fs::create_dir_all(prefix).unwrap();

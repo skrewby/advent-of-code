@@ -34,9 +34,7 @@ fn calculate_ribbon_required(dimensions: &str) -> u32 {
 fn day_2(input: &str) -> String {
     let mut total_ribbon = 0;
     for dim in input.split('\n') {
-        if !dim.is_empty() {
-            total_ribbon += calculate_ribbon_required(dim);
-        }
+        total_ribbon += calculate_ribbon_required(dim);
     }
 
     total_ribbon.to_string()
