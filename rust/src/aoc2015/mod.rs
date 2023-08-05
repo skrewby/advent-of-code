@@ -5,6 +5,7 @@ mod day1;
 mod day2;
 mod day3;
 mod day4;
+mod day5;
 
 pub fn solve(day: u32, input: String) -> Result<Solution> {
     let mut solution = Solution::new();
@@ -14,6 +15,7 @@ pub fn solve(day: u32, input: String) -> Result<Solution> {
         2 => day2::solve(input, &mut solution)?,
         3 => day3::solve(input, &mut solution)?,
         4 => day4::solve(input, &mut solution)?,
+        5 => day5::solve(input, &mut solution)?,
         _ => println!("Solution for day {} doesn't exist", day),
     }
 
