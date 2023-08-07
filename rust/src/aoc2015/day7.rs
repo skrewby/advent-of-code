@@ -5,11 +5,11 @@ use std::collections::HashMap;
 fn get_args(arg1: &str, arg2: &str, reg: &mut HashMap<String, u16>) -> (u16, u16) {
     let left_arg = match arg1.parse::<u16>() {
         Ok(i) => i,
-        Err(_) => reg[arg1]
+        Err(_) => reg[arg1],
     };
     let right_arg = match arg2.parse::<u16>() {
         Ok(i) => i,
-        Err(_) => reg[arg2]
+        Err(_) => reg[arg2],
     };
 
     (left_arg, right_arg)
@@ -53,11 +53,11 @@ fn bitwise(
     dest: String,
     reg: &mut HashMap<String, u16>,
 ) -> Result<()> {
-     match op {
-        "AND" => op_and(arg1, arg2, dest, reg), 
-        "OR" => op_or(arg1, arg2, dest, reg), 
-        "LSHIFT" => op_lshift(arg1, arg2, dest, reg), 
-        "RSHIFT" => op_rshift(arg1, arg2, dest, reg), 
+    match op {
+        "AND" => op_and(arg1, arg2, dest, reg),
+        "OR" => op_or(arg1, arg2, dest, reg),
+        "LSHIFT" => op_lshift(arg1, arg2, dest, reg),
+        "RSHIFT" => op_rshift(arg1, arg2, dest, reg),
         _ => (),
     };
 
@@ -100,7 +100,7 @@ fn is_command_valid(tokens: &[String], reg: &HashMap<String, u16>) -> bool {
         3 => {
             let arg1_num = &tokens[0].parse::<u16>();
             arg1_num.is_ok() || reg.contains_key(&tokens[0])
-        },
+        }
         4 => reg.contains_key(&tokens[1]),
         5 => {
             let arg1 = &tokens[0];
@@ -163,8 +163,30 @@ fn part_1(input: &str) -> Result<String> {
     Ok(reg["a"].to_string())
 }
 
+fn part_2(input: &str) -> Result<String> {
+    let mut reg = HashMap::new();
+
+    // Add all commands to a map so we can remove them as we execute the valid ones
+    let mut cmds = HashMap::new();
+    for (i, cmd) in input.lines().enumerate() {
+        let mut tokens: Vec<String> = cmd.split(' ').map(|x| x.to_string()).collect();
+
+        // Replace 'b' signal with Part 1 'a' signal
+        if tokens.len() == 3 && tokens[2] == "b" {
+            tokens[0] = 956.to_string();
+        }
+
+        cmds.insert(i, tokens);
+    }
+
+    find_and_execute(&mut cmds, &mut reg)?;
+
+    Ok(reg["a"].to_string())
+}
+
 pub fn solve(input: String, solution: &mut Solution) -> Result<()> {
     solution.part1 = part_1(&input).context("Completing Year 2015 Day 7 Part 1")?;
+    solution.part2 = part_2(&input).context("Completing Year 2015 Day 7 Part 2")?;
 
     Ok(())
 }
