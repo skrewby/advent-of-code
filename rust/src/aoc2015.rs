@@ -1,6 +1,8 @@
 use crate::solution::Solution;
 use anyhow::Result;
 
+mod utils;
+
 mod day1;
 mod day2;
 mod day3;
@@ -9,6 +11,7 @@ mod day5;
 mod day6;
 mod day7;
 mod day8;
+mod day9;
 
 pub fn solve(day: u32, input: String) -> Result<Solution> {
     let mut solution = Solution::new();
@@ -22,6 +25,7 @@ pub fn solve(day: u32, input: String) -> Result<Solution> {
         6 => day6::solve(input, &mut solution)?,
         7 => day7::solve(input, &mut solution)?,
         8 => day8::solve(input, &mut solution)?,
+        9 => day9::solve(input, &mut solution)?,
         _ => println!("Solution for day {} doesn't exist", day),
     }
 
