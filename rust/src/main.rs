@@ -16,7 +16,7 @@ fn main() -> Result<()> {
         _ => panic!("Year {} not implemented yet!", year),
     };
 
-    println!("Time taken: {} us", solution.duration.as_micros());
+    println!("Time taken: {} us", solution.get_time());
     println!("Part 1: {}", solution.part1);
     println!("Part 2: {}", solution.part2);
 

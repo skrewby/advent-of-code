@@ -35,6 +35,5 @@ pub fn solve(day: u32, input: String) -> Result<Solution> {
         _ => println!("Solution for day {} doesn't exist", day),
     }
 
-    solution.complete();
     Ok(solution)
 }
