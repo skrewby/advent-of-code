@@ -1,5 +1,5 @@
 use crate::solution::Solution;
-use anyhow::{Context, Result};
+use anyhow::Result;
 use rayon::prelude::*;
 use std::collections::HashMap;
 
@@ -15,7 +15,7 @@ enum ParseState {
     LOCATION,
 }
 
-fn map_values(map: &mut HashMap<u32, u32>, line: &str) {
+fn map_values(map: &mut HashMap<u32, (u32, u32)>, line: &str) {
     let values: Vec<u32> = line
         .split(' ')
         .map(|s| u32::from_str_radix(s, 10).unwrap())
@@ -24,22 +24,18 @@ fn map_values(map: &mut HashMap<u32, u32>, line: &str) {
     let dest_start = values[0];
     let source_start = values[1];
     let range = values[2];
-
-    for (i, source) in (source_start..source_start + range).enumerate() {
-        let dest = dest_start + i as u32;
-        map.insert(source, dest);
-    }
+    map.insert(source_start, (dest_start, range));
 }
 
 fn parse_input(
     input: &str,
-    soil_map: &mut HashMap<u32, u32>,
-    fertilizer_map: &mut HashMap<u32, u32>,
-    water_map: &mut HashMap<u32, u32>,
-    light_map: &mut HashMap<u32, u32>,
-    temp_map: &mut HashMap<u32, u32>,
-    humidity_map: &mut HashMap<u32, u32>,
-    location_map: &mut HashMap<u32, u32>,
+    soil_map: &mut HashMap<u32, (u32, u32)>,
+    fertilizer_map: &mut HashMap<u32, (u32, u32)>,
+    water_map: &mut HashMap<u32, (u32, u32)>,
+    light_map: &mut HashMap<u32, (u32, u32)>,
+    temp_map: &mut HashMap<u32, (u32, u32)>,
+    humidity_map: &mut HashMap<u32, (u32, u32)>,
+    location_map: &mut HashMap<u32, (u32, u32)>,
 ) -> Result<Vec<u32>> {
     let mut seeds: Vec<u32> = vec![0; 0];
 
@@ -86,22 +82,144 @@ fn parse_input(
     Ok(seeds)
 }
 
-fn get_map_value(seed: u32, map: &HashMap<u32, u32>) -> u32 {
-    match map.contains_key(&seed) {
-        true => map[&seed],
-        false => seed,
+fn get_map_value(key: u32, map: &HashMap<u32, (u32, u32)>) -> u32 {
+    let mut has_key = false;
+    let mut value = 0;
+
+    for (source_start, (dest_start, range)) in map {
+        if key >= *source_start && key < *source_start + *range {
+            has_key = true;
+            value = dest_start + (key - source_start);
+        }
+    }
+
+    match has_key {
+        true => value,
+        false => key,
+    }
+}
+
+fn get_map_key(value: u32, map: &HashMap<u32, (u32, u32)>) -> u32 {
+    for (source_start, (dest_start, range)) in map {
+        if value >= *dest_start && value < *dest_start + *range {
+            let key = source_start + value - *dest_start;
+            return key;
+        }
+    }
+
+    value
+}
+
+fn get_value_backtrack(
+    location: u32,
+    soil_map: &HashMap<u32, (u32, u32)>,
+    fertilizer_map: &HashMap<u32, (u32, u32)>,
+    water_map: &HashMap<u32, (u32, u32)>,
+    light_map: &HashMap<u32, (u32, u32)>,
+    temp_map: &HashMap<u32, (u32, u32)>,
+    humidity_map: &HashMap<u32, (u32, u32)>,
+    location_map: &HashMap<u32, (u32, u32)>,
+    value_wanted: ParseState,
+) -> u32 {
+    match value_wanted {
+        ParseState::SEEDS => get_map_key(
+            get_value_backtrack(
+                location,
+                soil_map,
+                fertilizer_map,
+                water_map,
+                light_map,
+                temp_map,
+                humidity_map,
+                location_map,
+                ParseState::SOIL,
+            ),
+            soil_map,
+        ),
+        ParseState::SOIL => get_map_key(
+            get_value_backtrack(
+                location,
+                soil_map,
+                fertilizer_map,
+                water_map,
+                light_map,
+                temp_map,
+                humidity_map,
+                location_map,
+                ParseState::FERTILIZER,
+            ),
+            fertilizer_map,
+        ),
+        ParseState::FERTILIZER => get_map_key(
+            get_value_backtrack(
+                location,
+                soil_map,
+                fertilizer_map,
+                water_map,
+                light_map,
+                temp_map,
+                humidity_map,
+                location_map,
+                ParseState::WATER,
+            ),
+            water_map,
+        ),
+        ParseState::WATER => get_map_key(
+            get_value_backtrack(
+                location,
+                soil_map,
+                fertilizer_map,
+                water_map,
+                light_map,
+                temp_map,
+                humidity_map,
+                location_map,
+                ParseState::LIGHT,
+            ),
+            light_map,
+        ),
+        ParseState::LIGHT => get_map_key(
+            get_value_backtrack(
+                location,
+                soil_map,
+                fertilizer_map,
+                water_map,
+                light_map,
+                temp_map,
+                humidity_map,
+                location_map,
+                ParseState::TEMPERATURE,
+            ),
+            temp_map,
+        ),
+        ParseState::TEMPERATURE => get_map_key(
+            get_value_backtrack(
+                location,
+                soil_map,
+                fertilizer_map,
+                water_map,
+                light_map,
+                temp_map,
+                humidity_map,
+                location_map,
+                ParseState::HUMIDITY,
+            ),
+            humidity_map,
+        ),
+        ParseState::HUMIDITY => get_map_key(location, location_map),
+        ParseState::LOCATION => location,
     }
 }
 
 fn get_value(
     seed: u32,
-    soil_map: &HashMap<u32, u32>,
-    fertilizer_map: &HashMap<u32, u32>,
-    water_map: &HashMap<u32, u32>,
-    light_map: &HashMap<u32, u32>,
-    temp_map: &HashMap<u32, u32>,
-    humidity_map: &HashMap<u32, u32>,
-    location_map: &HashMap<u32, u32>,
+    soil_map: &HashMap<u32, (u32, u32)>,
+    fertilizer_map: &HashMap<u32, (u32, u32)>,
+    water_map: &HashMap<u32, (u32, u32)>,
+    light_map: &HashMap<u32, (u32, u32)>,
+    temp_map: &HashMap<u32, (u32, u32)>,
+    humidity_map: &HashMap<u32, (u32, u32)>,
+    location_map: &HashMap<u32, (u32, u32)>,
     value_wanted: ParseState,
 ) -> u32 {
     match value_wanted {
@@ -183,13 +301,13 @@ fn get_value(
 
 fn get_min_location(
     seeds: Vec<u32>,
-    soil_map: &HashMap<u32, u32>,
-    fertilizer_map: &HashMap<u32, u32>,
-    water_map: &HashMap<u32, u32>,
-    light_map: &HashMap<u32, u32>,
-    temp_map: &HashMap<u32, u32>,
-    humidity_map: &HashMap<u32, u32>,
-    location_map: &HashMap<u32, u32>,
+    soil_map: &HashMap<u32, (u32, u32)>,
+    fertilizer_map: &HashMap<u32, (u32, u32)>,
+    water_map: &HashMap<u32, (u32, u32)>,
+    light_map: &HashMap<u32, (u32, u32)>,
+    temp_map: &HashMap<u32, (u32, u32)>,
+    humidity_map: &HashMap<u32, (u32, u32)>,
+    location_map: &HashMap<u32, (u32, u32)>,
 ) -> u32 {
     seeds
         .par_iter()
@@ -210,14 +328,49 @@ fn get_min_location(
         .unwrap()
 }
 
+fn get_min_location_seed_range(
+    seed_range: &Vec<u32>,
+    soil_map: &HashMap<u32, (u32, u32)>,
+    fertilizer_map: &HashMap<u32, (u32, u32)>,
+    water_map: &HashMap<u32, (u32, u32)>,
+    light_map: &HashMap<u32, (u32, u32)>,
+    temp_map: &HashMap<u32, (u32, u32)>,
+    humidity_map: &HashMap<u32, (u32, u32)>,
+    location_map: &HashMap<u32, (u32, u32)>,
+) -> u32 {
+    for location in 0..u32::MAX {
+        let seed = get_value_backtrack(
+            location,
+            soil_map,
+            fertilizer_map,
+            water_map,
+            light_map,
+            temp_map,
+            humidity_map,
+            location_map,
+            ParseState::SEEDS,
+        );
+
+        let mut i = 0;
+        for &seed_start in seed_range.iter().step_by(2) {
+            if seed >= seed_start && seed < seed_start + seed_range[i + 1] {
+                return location;
+            }
+            i += 2;
+        }
+    }
+
+    0
+}
+
 pub fn solve(input: String, solution: &mut Solution) -> Result<()> {
-    let mut soil_map: HashMap<u32, u32> = HashMap::new();
-    let mut fertilizer_map: HashMap<u32, u32> = HashMap::new();
-    let mut water_map: HashMap<u32, u32> = HashMap::new();
-    let mut light_map: HashMap<u32, u32> = HashMap::new();
-    let mut temp_map: HashMap<u32, u32> = HashMap::new();
-    let mut humidity_map: HashMap<u32, u32> = HashMap::new();
-    let mut location_map: HashMap<u32, u32> = HashMap::new();
+    let mut soil_map: HashMap<u32, (u32, u32)> = HashMap::new();
+    let mut fertilizer_map: HashMap<u32, (u32, u32)> = HashMap::new();
+    let mut water_map: HashMap<u32, (u32, u32)> = HashMap::new();
+    let mut light_map: HashMap<u32, (u32, u32)> = HashMap::new();
+    let mut temp_map: HashMap<u32, (u32, u32)> = HashMap::new();
+    let mut humidity_map: HashMap<u32, (u32, u32)> = HashMap::new();
+    let mut location_map: HashMap<u32, (u32, u32)> = HashMap::new();
     let seeds = parse_input(
         &input,
         &mut soil_map,
@@ -240,6 +393,25 @@ pub fn solve(input: String, solution: &mut Solution) -> Result<()> {
         &location_map,
     );
     solution.part1 = closest_loc.to_string();
+
+    let seed_line: Vec<&str> = input.lines().next().unwrap().split(':').collect();
+    let seed_range: Vec<u32> = seed_line[1]
+        .trim()
+        .split(' ')
+        .filter(|num| !num.is_empty())
+        .map(|num| u32::from_str_radix(num, 10).unwrap())
+        .collect();
+    let closest_loc = get_min_location_seed_range(
+        &seed_range,
+        &soil_map,
+        &fertilizer_map,
+        &water_map,
+        &light_map,
+        &temp_map,
+        &humidity_map,
+        &location_map,
+    );
+    solution.part2 = closest_loc.to_string();
 
     Ok(())
 }
@@ -284,13 +456,13 @@ humidity-to-location map:
 
     #[test]
     fn parse_test() -> Result<()> {
-        let mut soil_map: HashMap<u32, u32> = HashMap::new();
-        let mut fertilizer_map: HashMap<u32, u32> = HashMap::new();
-        let mut water_map: HashMap<u32, u32> = HashMap::new();
-        let mut light_map: HashMap<u32, u32> = HashMap::new();
-        let mut temp_map: HashMap<u32, u32> = HashMap::new();
-        let mut humidity_map: HashMap<u32, u32> = HashMap::new();
-        let mut location_map: HashMap<u32, u32> = HashMap::new();
+        let mut soil_map: HashMap<u32, (u32, u32)> = HashMap::new();
+        let mut fertilizer_map: HashMap<u32, (u32, u32)> = HashMap::new();
+        let mut water_map: HashMap<u32, (u32, u32)> = HashMap::new();
+        let mut light_map: HashMap<u32, (u32, u32)> = HashMap::new();
+        let mut temp_map: HashMap<u32, (u32, u32)> = HashMap::new();
+        let mut humidity_map: HashMap<u32, (u32, u32)> = HashMap::new();
+        let mut location_map: HashMap<u32, (u32, u32)> = HashMap::new();
         let seeds = parse_input(
             INPUT,
             &mut soil_map,
@@ -380,6 +552,25 @@ humidity-to-location map:
             &location_map,
         );
         assert_eq!(min_location, 35);
+
+        let seed_line: Vec<&str> = INPUT.lines().next().unwrap().split(':').collect();
+        let seed_range: Vec<u32> = seed_line[1]
+            .trim()
+            .split(' ')
+            .filter(|num| !num.is_empty())
+            .map(|num| u32::from_str_radix(num, 10).unwrap())
+            .collect();
+        let closest_loc = get_min_location_seed_range(
+            &seed_range,
+            &soil_map,
+            &fertilizer_map,
+            &water_map,
+            &light_map,
+            &temp_map,
+            &humidity_map,
+            &location_map,
+        );
+        assert_eq!(closest_loc, 46);
         Ok(())
     }
 
